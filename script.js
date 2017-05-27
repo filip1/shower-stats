@@ -1,8 +1,8 @@
+// method to convert a Date object to a string as used by HTML input elements of type datetime-local
 Date.prototype.toLocalISOString = function() {
   var off = this.getTimezoneOffset();
 	return new Date(this.getFullYear(), this.getMonth(), this.getDate(), this.getHours(), this.getMinutes() - off, this.getSeconds(), this.getMilliseconds()).toISOString().slice(0,-1);
 }
-
 
 function dateTimeParseException(str) {
     this.value = str;
@@ -10,10 +10,13 @@ function dateTimeParseException(str) {
     this.toString = function() {
         return this.value + this.message;
     };
-
 }
 
+
+// takes a datetime string (e.g. from an HTML datetime-local input element) and returns a Date object
 function parseDateTime(str) {
+    var UTC = str.slice(-1) === "Z" ? true : false;
+    if (UTC) {str = str.slice(0,-1)} // remove trailing Z (the UTC marker) from string to continue parsing
     var dateTime = str.split('T');
     if (dateTime.length != 2) {
         throw new dateTimeParseException(str);
@@ -33,10 +36,16 @@ function parseDateTime(str) {
         minute = parseInt(time[1], 10),
         second = parseInt(time[2].split('.')[0], 10),
         millisecond = parseInt(time[2].split('.')[1], 10);
-    var dateObj = new Date(year, month, day, hour, minute, second, millisecond);
+    if (UTC) {
+        var dateObj = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
+    }
+    else {
+        var dateObj = new Date(year, month, day, hour, minute, second, millisecond);
+    }
     return dateObj;
 }
 
+// set a datetime-local input field to the current time and date
 function recordTime (startOrStop) {
     var timeField = document.getElementById(startOrStop);
     var now = new Date();
@@ -46,36 +55,40 @@ function recordTime (startOrStop) {
 function formSubmit (e) {
     var form = e.target;
     var inputs = form.getElementsByTagName('input');
-    var formValues = {};
-    for (i = 0; i<inputs.length; i++) {
-        if (inputs[i].type === "number") {
-            formValues[inputs[i].id] = parseFloat(inputs[i].value);
-        }
-        else if (inputs[i].type === "datetime-local" ||
-                 inputs[i].id === 'startTime' ||
-                 inputs[i].id === 'endTime') { // not all browsers support datetime-local
-            formValues[inputs[i].id] = parseDateTime(inputs[i].value);
-        }
-        else {
-            formValues[inputs[i].id] = inputs[i].value;
-        }
-        
-    }
-    
-//    var shower = new Shower();
-    var shower = new Shower(formValues);
+    var shower = new Shower (inputs);
     showers.push(shower);
     localStorage.setItem("showers", JSON.stringify(showers));
     e.preventDefault();
 }
 
 
-var showers = JSON.parse(localStorage.getItem("showers")) ? JSON.parse(localStorage.getItem("showers")) : [];
-
-
-var Shower = function (formValues) {
-    for (var prop in formValues) {
-        this[prop] = formValues[prop];
+var Shower = function (inputs) {
+    if (inputs instanceof HTMLCollection) { // data is coming from form inputs
+        for (i = 0; i<inputs.length; i++) {
+            var input = inputs[i];
+            if (input.id === 'startTime' || input.id === 'endTime') {
+                this[input.id] = parseDateTime(input.value);
+            }
+            else if (input.type === "number") {
+                this[input.id] = parseFloat(input.value);
+            }
+            else {
+                this[input.id] = input.value;
+            }
+        }
+    }
+    else { // data is coming from storage (string-based key-value pairs)
+        for (var prop in inputs) {
+            if (prop === 'startTime' || prop === 'endTime') {
+                this[prop] = parseDateTime(inputs[prop]);
+            }
+            else if (parseFloat(inputs[prop])) {
+                this[prop] = parseFloat(inputs[prop]);
+            }
+            else {
+                this[prop] = inputs[prop];
+            }
+        }
     }
     this.calcResults = function () {    
         this.warmUsed = this.warmEnd - this.warmStart;
@@ -90,10 +103,23 @@ var Shower = function (formValues) {
         this.avgColdPerSec = 1000 * this.coldUsed / this.timeUsed;
     }
     this.calcResults();
-};
+}
 
 
+// load from localStorage
 
+function loadShowersFromStorage () {
+    var showersFromStorage = JSON.parse(localStorage.getItem("showers")) ? JSON.parse(localStorage.getItem("showers")) : [];
+    var showers = [];
+    for (i = 0; i < showersFromStorage.length; i++) {
+        var showerFromStorage = showersFromStorage[i];
+        var shower = new Shower(showerFromStorage); // make them proper Shower objects
+        showers.push(shower);
+    }
+    return showers;
+}
+
+var showers = loadShowersFromStorage();
 
 
 document.getElementById('form').addEventListener('submit', formSubmit, false);
