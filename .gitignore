@@ -1,0 +1,5 @@
+# Files that end in tilde (e.g. gedit temp/backup files)
+*~
+
+# Bluefish projects
+*.bfproject

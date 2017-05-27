@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Shower stats</title>
+<meta name="description" content="Keep track of your showers: How long are your showers, and how much warm and cold water are you using?">
+<link href="style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<h2>Add or edit a shower</h2>
+<form id="form">
+<h3>Temperatures</h3>
+<label for="tempWarm">Warm water temperature</label>
+<input id="tempWarm" type="number" />
+<label for="tempCold">Cold water temperature</label>
+<input id="tempCold" type="number" />
+<h3>Meter readings before shower</h3>
+<label for="warmStart">Warm water before shower</label>
+<input id="warmStart" type="number" step="0.1" />
+<label for="coldStart">Cold water before shower</label>
+<input id="coldStart" type="number" step="0.1" />
+<h3>Start and stop</h3>
+<button id="start" type="button">Start</button>
+<button id="stop" type="button">Stop</button>
+<label for="startTime">Time started</label>
+<input id="startTime" type="datetime-local" />
+<label for="endTime">Time stopped</label>
+<input id="endTime" type="datetime-local" />
+<h3>Meter readings after shower</h3>
+<label for="warmEnd">Warm water after shower</label>
+<input id="warmEnd" type="number" step="0.1" />
+<label for="coldEnd">Cold water after shower</label>
+<input id="coldEnd" type="number" step="0.1" />
+<button type="submit">Submit</button>
+</form>
+<script type="text/javascript" src="script.js"></script>
+</body>
+</html>
