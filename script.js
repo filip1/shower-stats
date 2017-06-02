@@ -52,44 +52,52 @@ function recordTime (startOrStop) {
     timeField.value = now.toLocalISOString();
 }
 
+function saveToLocalStorage (obj, objName) {
+    localStorage.setItem(objName, JSON.stringify(obj));
+}
+
 function formSubmit (e) {
     var form = e.target;
     var inputs = form.getElementsByTagName('input');
     var shower = new Shower (inputs);
     showers.push(shower);
-    localStorage.setItem("showers", JSON.stringify(showers));
+    saveToLocalStorage(showers, "showers");
     e.preventDefault();
 }
 
-
 var Shower = function (inputs) {
-    if (inputs instanceof HTMLCollection) { // data is coming from form inputs
-        for (i = 0; i<inputs.length; i++) {
-            var input = inputs[i];
-            if (input.id === 'startTime' || input.id === 'endTime') {
-                this[input.id] = parseDateTime(input.value);
-            }
-            else if (input.type === "number") {
-                this[input.id] = parseFloat(input.value);
-            }
-            else {
-                this[input.id] = input.value;
-            }
+    this.parseAndAssign = function (key, val) {
+        switch (key) {
+            case 'startTime':
+            case 'endTime':
+                this[key] = parseDateTime(val);
+                break;
+            case 'timeUsed':
+                this[key] = parseInt();
+                break;
+            case 'tempWarm':
+            case 'tempCold':
+            case 'warmStart':
+            case 'coldStart':
+            case 'warmEnd':
+            case 'coldEnd':
+            case 'warmUsed':
+            case 'coldUsed':
+            case 'waterUsed':
+            case 'warmRatio':
+            case 'coldRatio':
+            case 'avgTemp':
+            case 'avgWaterPerSec':
+            case 'avgWarmPerSec':
+            case 'avgColdPerSec':
+                this[key] = parseFloat(val);
+                break;
+            default:
+                console.warn(key + ' not recognized, passing value without parsing');
+                this[key] = val;
         }
     }
-    else { // data is coming from storage (string-based key-value pairs)
-        for (var prop in inputs) {
-            if (prop === 'startTime' || prop === 'endTime') {
-                this[prop] = parseDateTime(inputs[prop]);
-            }
-            else if (parseFloat(inputs[prop])) {
-                this[prop] = parseFloat(inputs[prop]);
-            }
-            else {
-                this[prop] = inputs[prop];
-            }
-        }
-    }
+    
     this.calcResults = function () {    
         this.warmUsed = this.warmEnd - this.warmStart;
         this.coldUsed = this.coldEnd - this.coldStart;
@@ -101,6 +109,17 @@ var Shower = function (inputs) {
         this.avgWaterPerSec = 1000 * this.waterUsed / this.timeUsed;
         this.avgWarmPerSec = 1000 * this.warmUsed / this.timeUsed;
         this.avgColdPerSec = 1000 * this.coldUsed / this.timeUsed;
+    }
+    
+    if (inputs instanceof HTMLCollection) { // data is coming from form inputs
+        for (i = 0; i<inputs.length; i++) {
+            this.parseAndAssign(inputs[i].id, inputs[i].value);
+        }
+    }
+    else { // data is coming from storage (string-based key-value pairs)
+        for (var prop in inputs) {
+            this.parseAndAssign(prop, inputs[prop]);
+        }
     }
     this.calcResults();
 }
@@ -124,4 +143,4 @@ var showers = loadShowersFromStorage();
 
 document.getElementById('form').addEventListener('submit', formSubmit, false);
 document.getElementById('start').addEventListener('click', function() {recordTime('startTime');}, false);
-document.getElementById('stop').addEventListener('click', function() {recordTime('endTime')}, false);
+document.getElementById('stop').addEventListener('click', function() {recordTime('endTime');}, false);
